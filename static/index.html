@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI in Threat Intelligence — Live Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+    .tab-active { background: rgb(15 23 42); color: white; }
+    .pulse-dot::before { content: ''; display: inline-block; width: 8px; height: 8px;
+      background: #22c55e; border-radius: 9999px; margin-right: 6px;
+      animation: pulse 1.6s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+<header class="bg-slate-900 text-white">
+  <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+    <div>
+      <div class="text-xs uppercase tracking-widest text-cyan-300">Information Security &amp; Assurance</div>
+      <h1 class="text-2xl font-bold">AI in Cyber Threat Intelligence — Live Demo</h1>
+    </div>
+    <div class="text-sm pulse-dot text-emerald-300">model server online</div>
+  </div>
+  <nav class="max-w-6xl mx-auto px-6 pb-4 flex gap-2 text-sm">
+    <button data-tab="phishing"  class="tab px-4 py-2 rounded-md bg-slate-800 hover:bg-slate-700">Malicious URL Detector</button>
+    <button data-tab="intrusion" class="tab px-4 py-2 rounded-md bg-slate-800 hover:bg-slate-700">Network Intrusion Classifier</button>
+    <button data-tab="behavior"  class="tab px-4 py-2 rounded-md bg-slate-800 hover:bg-slate-700">Behavioral Anomaly Detector</button>
+    <button data-tab="metrics"   class="tab px-4 py-2 rounded-md bg-slate-800 hover:bg-slate-700">Model Metrics</button>
+  </nav>
+</header>
+
+<main class="max-w-6xl mx-auto px-6 py-8 space-y-8">
+
+  <!-- ============================== PHISHING ============================== -->
+  <section id="tab-phishing" class="tab-panel">
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-xl font-semibold">Malicious URL Detector</h2>
+      <p class="text-slate-600 text-sm mt-1">Random Forest classifier on 15 lexical URL features trained on 651K real URLs (benign, phishing, defacement, malware). Demonstrates <b>Phishing Detection &amp; Prevention</b>.</p>
+
+      <div class="mt-5 flex gap-2">
+        <input id="url-input" class="flex-1 border rounded-md px-3 py-2 mono text-sm"
+               placeholder="https://example.com/login" />
+        <button id="url-submit" class="bg-slate-900 text-white px-4 py-2 rounded-md hover:bg-slate-700">Analyze</button>
+      </div>
+
+      <div class="mt-3 flex flex-wrap gap-2 text-xs" id="url-samples"></div>
+
+      <div id="url-result" class="mt-6 hidden">
+        <div class="flex items-center gap-4">
+          <div id="url-verdict" class="text-2xl font-bold"></div>
+          <div class="text-slate-500 text-sm">malicious probability:
+            <span id="url-prob" class="mono font-semibold"></span>
+          </div>
+        </div>
+        <div class="mt-2 h-3 w-full bg-slate-200 rounded-full overflow-hidden">
+          <div id="url-bar" class="h-3 bg-rose-500" style="width:0%"></div>
+        </div>
+        <details class="mt-4">
+          <summary class="cursor-pointer text-sm text-slate-600">Extracted features</summary>
+          <pre id="url-feats" class="mono text-xs bg-slate-900 text-emerald-200 rounded-md p-3 mt-2 overflow-auto"></pre>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== INTRUSION ============================== -->
+  <section id="tab-intrusion" class="tab-panel hidden">
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-xl font-semibold">Network Intrusion Classifier</h2>
+      <p class="text-slate-600 text-sm mt-1">Random Forest trained on real NSL-KDD flow data (125K connections). Classes: Normal, DoS, Probe, R2L, U2R. Demonstrates <b>Proactive Threat Detection</b>.</p>
+
+      <div class="grid md:grid-cols-2 gap-6 mt-5">
+        <div>
+          <div class="text-sm font-medium mb-2">Pick a scenario:</div>
+          <div id="intr-samples" class="flex flex-col gap-2"></div>
+          <button id="intr-submit" class="mt-4 bg-slate-900 text-white px-4 py-2 rounded-md hover:bg-slate-700">Classify selected flow</button>
+          <details class="mt-4">
+            <summary class="cursor-pointer text-sm text-slate-600">Selected feature vector</summary>
+            <pre id="intr-feats" class="mono text-xs bg-slate-900 text-emerald-200 rounded-md p-3 mt-2 overflow-auto"></pre>
+          </details>
+        </div>
+
+        <div>
+          <div id="intr-verdict" class="text-2xl font-bold text-slate-400">— awaiting classification —</div>
+          <canvas id="intr-chart" class="mt-3"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== BEHAVIOR ============================== -->
+  <section id="tab-behavior" class="tab-panel hidden">
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-xl font-semibold">Behavioral Anomaly Detector</h2>
+      <p class="text-slate-600 text-sm mt-1">IsolationForest trained <i>only</i> on normal logins (unsupervised). Demonstrates <b>Behavioral Analytics</b> — catching stolen credentials via deviation from a user's pattern.</p>
+
+      <div class="grid md:grid-cols-2 gap-6 mt-5">
+        <div>
+          <div class="text-sm font-medium mb-2">Login event:</div>
+          <div id="beh-samples" class="flex flex-col gap-2"></div>
+          <button id="beh-submit" class="mt-4 bg-slate-900 text-white px-4 py-2 rounded-md hover:bg-slate-700">Score event</button>
+          <details class="mt-4">
+            <summary class="cursor-pointer text-sm text-slate-600">Login feature vector</summary>
+            <pre id="beh-feats" class="mono text-xs bg-slate-900 text-emerald-200 rounded-md p-3 mt-2 overflow-auto"></pre>
+          </details>
+        </div>
+        <div>
+          <div id="beh-verdict" class="text-2xl font-bold text-slate-400">— awaiting evaluation —</div>
+          <div class="mt-2 text-slate-500 text-sm">anomaly score: <span id="beh-score" class="mono">—</span></div>
+          <canvas id="beh-chart" class="mt-4"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== METRICS ============================== -->
+  <section id="tab-metrics" class="tab-panel hidden">
+    <div class="bg-white rounded-2xl shadow p-6 space-y-6">
+      <h2 class="text-xl font-semibold">Model Training Metrics</h2>
+      <p class="text-slate-600 text-sm">Auto-generated by <span class="mono">train_models.py</span>. Use these numbers on your slides.</p>
+      <div id="metrics-content" class="space-y-6 text-sm"></div>
+    </div>
+  </section>
+
+  <footer class="text-center text-xs text-slate-500 mt-12">
+    Built for the "AI in Threat Intelligence" presentation · Python · scikit-learn · FastAPI · Tailwind · Chart.js
+  </footer>
+</main>
+
+<script>
+// ---------------------- tabs ----------------------
+const tabs = document.querySelectorAll('.tab');
+const panels = document.querySelectorAll('.tab-panel');
+function activate(name) {
+  tabs.forEach(t => t.classList.toggle('tab-active', t.dataset.tab === name));
+  panels.forEach(p => p.classList.toggle('hidden', p.id !== 'tab-' + name));
+  if (name === 'metrics') loadMetrics();
+}
+tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.tab)));
+activate('phishing');
+
+// ---------------------- phishing ----------------------
+async function loadUrlSamples() {
+  const r = await fetch('/api/sample/phishing').then(r => r.json());
+  const box = document.getElementById('url-samples');
+  box.innerHTML = '';
+  r.examples.forEach(u => {
+    const b = document.createElement('button');
+    b.className = 'bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded mono';
+    b.textContent = u;
+    b.onclick = () => { document.getElementById('url-input').value = u; analyzeUrl(); };
+    box.appendChild(b);
+  });
+}
+async function analyzeUrl() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) return;
+  const res = await fetch('/api/phishing', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ url })
+  }).then(r => r.json());
+  document.getElementById('url-result').classList.remove('hidden');
+  const verdict = document.getElementById('url-verdict');
+  const isMalicious = res.label === 'malicious';
+  verdict.textContent = isMalicious ? '⚠️  MALICIOUS' : '✅  Benign';
+  verdict.className = 'text-2xl font-bold ' + (isMalicious ? 'text-rose-600' : 'text-emerald-600');
+  document.getElementById('url-prob').textContent = (res.malicious_probability*100).toFixed(1) + '%';
+  document.getElementById('url-bar').style.width = (res.malicious_probability*100).toFixed(1) + '%';
+  document.getElementById('url-bar').className = 'h-3 ' + (isMalicious ? 'bg-rose-500' : 'bg-emerald-500');
+  document.getElementById('url-feats').textContent = JSON.stringify(res.features, null, 2);
+}
+document.getElementById('url-submit').onclick = analyzeUrl;
+document.getElementById('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') analyzeUrl(); });
+loadUrlSamples();
+
+// ---------------------- intrusion ----------------------
+let intrSelected = null;
+let intrChart = null;
+async function loadIntrSamples() {
+  const r = await fetch('/api/sample/intrusion').then(r => r.json());
+  const box = document.getElementById('intr-samples');
+  box.innerHTML = '';
+  Object.entries(r.examples).forEach(([name, feats], i) => {
+    const b = document.createElement('button');
+    b.className = 'text-left bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded';
+    b.textContent = name;
+    b.onclick = () => {
+      intrSelected = { name, feats };
+      [...box.children].forEach(c => c.classList.remove('ring','ring-slate-900'));
+      b.classList.add('ring','ring-slate-900');
+      document.getElementById('intr-feats').textContent = JSON.stringify(feats, null, 2);
+    };
+    box.appendChild(b);
+    if (i === 0) b.click();
+  });
+}
+async function classifyIntr() {
+  if (!intrSelected) return;
+  const r = await fetch('/api/intrusion', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ features: intrSelected.feats })
+  }).then(r => r.json());
+  const v = document.getElementById('intr-verdict');
+  const danger = r.label !== 'Normal';
+  v.textContent = (danger ? '⚠️  ' : '✅  ') + r.label;
+  v.className = 'text-2xl font-bold ' + (danger ? 'text-rose-600' : 'text-emerald-600');
+  const labels = Object.keys(r.probabilities);
+  const data = labels.map(l => r.probabilities[l]);
+  if (intrChart) intrChart.destroy();
+  intrChart = new Chart(document.getElementById('intr-chart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'probability', data,
+      backgroundColor: labels.map(l => l === r.label
+        ? (l === 'Normal' ? '#10b981' : '#e11d48') : '#94a3b8') }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { max: 1 } } }
+  });
+}
+document.getElementById('intr-submit').onclick = classifyIntr;
+loadIntrSamples();
+
+// ---------------------- behavior ----------------------
+let behSelected = null;
+let behHistory = [];
+let behChart = null;
+async function loadBehSamples() {
+  const r = await fetch('/api/sample/behavior').then(r => r.json());
+  const box = document.getElementById('beh-samples');
+  box.innerHTML = '';
+  Object.entries(r.examples).forEach(([name, feats], i) => {
+    const b = document.createElement('button');
+    b.className = 'text-left bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded';
+    b.textContent = name;
+    b.onclick = () => {
+      behSelected = { name, feats };
+      [...box.children].forEach(c => c.classList.remove('ring','ring-slate-900'));
+      b.classList.add('ring','ring-slate-900');
+      document.getElementById('beh-feats').textContent = JSON.stringify(feats, null, 2);
+    };
+    box.appendChild(b);
+    if (i === 0) b.click();
+  });
+}
+function ensureBehChart() {
+  if (behChart) return;
+  behChart = new Chart(document.getElementById('beh-chart'), {
+    type: 'line',
+    data: { labels: [], datasets: [{
+      label: 'anomaly score', data: [], borderColor: '#0ea5e9',
+      backgroundColor: 'rgba(14,165,233,.2)', fill: true, tension: .3 }]},
+    options: { plugins: { legend: { display: false } } }
+  });
+}
+async function scoreBeh() {
+  if (!behSelected) return;
+  ensureBehChart();
+  const r = await fetch('/api/behavior', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ features: behSelected.feats })
+  }).then(r => r.json());
+  const v = document.getElementById('beh-verdict');
+  v.textContent = r.anomaly ? '🚨  ' + r.verdict : '✅  ' + r.verdict;
+  v.className = 'text-2xl font-bold ' + (r.anomaly ? 'text-rose-600' : 'text-emerald-600');
+  document.getElementById('beh-score').textContent = r.anomaly_score;
+  behHistory.push({ name: behSelected.name, score: r.anomaly_score });
+  behChart.data.labels = behHistory.map((_, i) => '#' + (i+1));
+  behChart.data.datasets[0].data = behHistory.map(h => h.score);
+  behChart.update();
+}
+document.getElementById('beh-submit').onclick = scoreBeh;
+loadBehSamples();
+
+// ---------------------- metrics ----------------------
+async function loadMetrics() {
+  const m = await fetch('/api/metrics').then(r => r.json());
+  const root = document.getElementById('metrics-content');
+  if (!m.trained) {
+    root.innerHTML = '<div class="text-rose-600">Models not trained yet — run <code class="mono">python train_models.py</code></div>';
+    return;
+  }
+  const phAcc = (m.phishing.accuracy*100).toFixed(2);
+  const phF1  = (m.phishing.f1*100).toFixed(2);
+  const inAcc = (m.intrusion.accuracy*100).toFixed(2);
+  const beAcc = (m.behavior.planted_set_accuracy*100).toFixed(2);
+  root.innerHTML = `
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="bg-slate-900 text-white rounded-xl p-5">
+        <div class="text-xs uppercase tracking-wider text-cyan-300">Malicious URL classifier</div>
+        <div class="text-3xl font-bold mt-2">${phAcc}%</div>
+        <div class="text-xs text-slate-300">accuracy · F1 ${phF1}%</div>
+      </div>
+      <div class="bg-slate-900 text-white rounded-xl p-5">
+        <div class="text-xs uppercase tracking-wider text-cyan-300">Intrusion classifier</div>
+        <div class="text-3xl font-bold mt-2">${inAcc}%</div>
+        <div class="text-xs text-slate-300">multi-class accuracy</div>
+      </div>
+      <div class="bg-slate-900 text-white rounded-xl p-5">
+        <div class="text-xs uppercase tracking-wider text-cyan-300">Behavioral anomaly</div>
+        <div class="text-3xl font-bold mt-2">${beAcc}%</div>
+        <div class="text-xs text-slate-300">recall on planted attack set</div>
+      </div>
+    </div>
+    <div>
+      <h3 class="font-semibold mb-2">Intrusion confusion matrix</h3>
+      ${renderConfusion(m.intrusion.labels, m.intrusion.confusion_matrix)}
+    </div>
+  `;
+}
+function renderConfusion(labels, mat) {
+  let h = '<table class="border-collapse text-xs"><thead><tr><th></th>';
+  labels.forEach(l => h += `<th class="px-2 py-1 bg-slate-100">${l}</th>`);
+  h += '</tr></thead><tbody>';
+  mat.forEach((row, i) => {
+    h += `<tr><td class="px-2 py-1 bg-slate-100 font-semibold">${labels[i]}</td>`;
+    const max = Math.max(...row);
+    row.forEach((v, j) => {
+      const intensity = v / (max || 1);
+      const bg = i === j ? `rgba(16,185,129,${0.15+intensity*0.7})` : `rgba(225,29,72,${intensity*0.5})`;
+      h += `<td class="px-2 py-1 mono" style="background:${bg}">${v}</td>`;
+    });
+    h += '</tr>';
+  });
+  return h + '</tbody></table>';
+}
+</script>
+</body>
+</html>
