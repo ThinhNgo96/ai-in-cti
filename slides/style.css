@@ -1,0 +1,12 @@
+/* Global CSS for Slidev Presentation */
+
+/* Forcefully and permanently disable the right slide list / Goto sidebar menu */
+#slidev-goto-dialog,
+.autocomplete-list,
+[id^="slidev-goto"],
+.slidev-goto-dialog {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

@@ -39,7 +39,7 @@ def train_phishing():
     df = build_phishing_dataset()
     X, y = df[PHISH_FEATURES], df["label"]
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, random_state=0, stratify=y)
-    clf = RandomForestClassifier(n_estimators=200, random_state=0, n_jobs=-1)
+    clf = RandomForestClassifier(n_estimators=200, random_state=0, n_jobs=-1, max_depth=15)
     clf.fit(Xtr, ytr)
     pred = clf.predict(Xte)
     acc = accuracy_score(yte, pred)

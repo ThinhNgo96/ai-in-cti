@@ -1,0 +1,13 @@
+{
+  "name": "cti-slides",
+  "private": true,
+  "scripts": {
+    "dev": "slidev",
+    "build": "slidev build",
+    "export": "slidev export"
+  },
+  "dependencies": {
+    "@slidev/cli": "0.49.29",
+    "@slidev/theme-default": "0.25.0"
+  }
+}

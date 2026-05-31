@@ -17,9 +17,9 @@ SUSPICIOUS_KEYWORDS = (
 )
 SHORTENERS = ("bit.ly", "tinyurl.com", "goo.gl", "t.co", "ow.ly", "is.gd")
 PHISH_FEATURES = [
-    "url_length", "hostname_length", "path_length", "num_dots", "num_hyphens",
-    "num_at", "num_question", "num_equals", "num_digits", "num_subdomains",
-    "has_ip", "has_https", "is_shortener", "suspicious_kw_count", "tld_suspicious",
+    "num_dots", "num_hyphens", "num_at", "num_question", "num_equals",
+    "num_digits", "num_subdomains", "has_ip", "is_shortener",
+    "suspicious_kw_count", "tld_suspicious",
 ]
 SUSPICIOUS_TLDS = {"zip", "mov", "xyz", "top", "tk", "ml", "ga", "cf", "gq", "click", "country"}
 
@@ -28,9 +28,27 @@ def extract_url_features(url: str) -> dict:
     url = (url or "").strip()
     if "://" not in url:
         url = "http://" + url
-    parsed = urlparse(url)
-    host = parsed.hostname or ""
-    path = parsed.path or ""
+    try:
+        parsed = urlparse(url)
+        host = parsed.hostname or ""
+        path = parsed.path or ""
+        scheme = parsed.scheme
+    except Exception:
+        # Fallback for malformed/invalid URLs (e.g. invalid IPv6 URLs with brackets)
+        scheme = "http"
+        host = ""
+        path = ""
+        if "://" in url:
+            try:
+                rest = url.split("://", 1)[1]
+                if "/" in rest:
+                    host, path_part = rest.split("/", 1)
+                    path = "/" + path_part
+                else:
+                    host = rest
+            except Exception:
+                pass
+
     digits = sum(c.isdigit() for c in url)
     tld = host.rsplit(".", 1)[-1].lower() if "." in host else ""
     has_ip = bool(re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", host))
@@ -46,7 +64,7 @@ def extract_url_features(url: str) -> dict:
         "num_digits": digits,
         "num_subdomains": max(host.count(".") - 1, 0),
         "has_ip": int(has_ip),
-        "has_https": int(parsed.scheme == "https"),
+        "has_https": int(scheme == "https"),
         "is_shortener": int(any(s in host for s in SHORTENERS)),
         "suspicious_kw_count": sum(kw in url.lower() for kw in SUSPICIOUS_KEYWORDS),
         "tld_suspicious": int(tld in SUSPICIOUS_TLDS),
